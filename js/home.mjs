@@ -1,42 +1,47 @@
-import axiosClient from './api/axiosClient';
 import postApi from './api/postApi';
+import { initPagination, renderPagination, initSearch, renderPostList } from './util';
 
-function createPostElement(post) {
-  if (!post) return;
+async function handleFilterChange(filterName, filterValue) {
   try {
-    const postTemplate = document.getElementById('postTemplate');
-    if (!postTemplate) return;
-    const liElement = postTemplate.content.firstElementChild.cloneNode(true);
-    if (!liElement) return;
+    const url = new URL(window.location);
+    url.searchParams.set(filterName, filterValue);
+    //reset page if needed
+    if (filterName === 'title_like') {
+      url.searchParams.set('_page', 1);
+    }
+    history.pushState({}, '', url);
 
-    const titleElement = liElement.querySelector('[data-id = "title"]');
-    if (titleElement) titleElement.textContent = post.title;
+    const { data, pagination } = await postApi.getAll(url.searchParams);
 
-    const descriptionElement = liElement.querySelector('[data-id = "description"]');
-    if (descriptionElement) descriptionElement.textContent = post.description;
+    renderPostList('postList', data);
+    renderPagination('pagination', pagination);
   } catch (error) {
-    console.log('Faild to create post item', error);
+    console.log('failed to fetch');
   }
-}
-
-function renderPostList(postList) {
-  console.log({ postList });
-  if (!Array.isArray(postList) || postList.length === 0) return;
-  const ulElement = document.getElementById('postList');
-  if (!ulElement) return;
-  postList.forEach((post) => {
-    const liElement = createPostElement(post);
-    ulElement.appendChild(liElement);
-  });
 }
 
 (async () => {
   try {
-    const queryParams = {
-      _page: 1,
-      _litmit: 10,
-    };
+    const url = new URL(window.location);
+    if (!url.searchParams.get('_page')) url.searchParams.set('_page', 1);
+
+    if (!url.searchParams.get('_limit')) url.searchParams.set('_limit', 9);
+
+    history.pushState({}, '', url);
+    const queryParams = url.searchParams;
+
+    initPagination({
+      elementId: 'pagination',
+      defaultParams: queryParams,
+      onChange: (page) => handleFilterChange('_page', page),
+    });
+    initSearch({
+      elementId: 'searchInput',
+      defaultParams: queryParams,
+      onChange: (value) => handleFilterChange('title_like', value),
+    });
     const { data, pagination } = await postApi.getAll(queryParams);
-    renderPostList(data);
+    renderPostList('postList', data);
+    renderPagination('pagination', pagination);
   } catch (error) {}
 })();

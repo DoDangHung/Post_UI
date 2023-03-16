@@ -6,6 +6,11 @@ const postApi = {
     return axiosClient.get(url, { params });
   },
 
+  getById(id) {
+    const url = `/posts/${id}`;
+    return axiosClient.get(url);
+  },
+
   get(postId) {
     const url = `/posts/${postId}`;
     return axiosClient.get(url);

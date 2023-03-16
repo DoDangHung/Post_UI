@@ -1,12 +1,33 @@
+// import AppConstants from '../appConstants.js';
 import axios from 'axios';
-import AppConstants from '../appConstants.js';
 
 const axiosClient = axios.create({
-  baseURL: AppConstants.API_URL,
+  baseURL: 'https://js-post-api.herokuapp.com/api',
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+axiosClient.interceptors.request.use(
+  function (config) {
+    const accessToken = localStorage.getItem('access_token');
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
+    }
+    return config;
+  },
+  function (error) {
+    if (!error.response) {
+      throw new Error('Network error. Please try again later');
+    }
+
+    //redirect to login if not login
+    if (error.response.status === 401) {
+      window.location.assign('/login');
+    }
+    return Promise.reject(error);
+  }
+);
 
 axiosClient.interceptors.response.use(
   function (response) {
